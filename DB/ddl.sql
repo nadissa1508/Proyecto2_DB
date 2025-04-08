@@ -1,5 +1,5 @@
 -- Tabla de usuarios
-CREATE TABLE usuarios (
+CREATE TABLE IF NOT EXISTS usuarios (
     id SERIAL PRIMARY KEY,
     nombre VARCHAR(100) NOT NULL,
     apellido VARCHAR(100) NOT NULL,
@@ -9,7 +9,7 @@ CREATE TABLE usuarios (
 );
 
 -- Tabla de lugares
-CREATE TABLE lugares (
+CREATE TABLE IF NOT EXISTS lugares (
     id SERIAL PRIMARY KEY,
     nombre VARCHAR(100) NOT NULL,
     cantidad_asientos INTEGER NOT NULL CHECK (cantidad_asientos > 0),
@@ -18,14 +18,14 @@ CREATE TABLE lugares (
 );
 
 -- Tabla de artistas
-CREATE TABLE artistas (
+CREATE TABLE IF NOT EXISTS artistas (
     id SERIAL PRIMARY KEY,
     nombre VARCHAR(100) NOT NULL,
     genero VARCHAR(100) NOT NULL
 );
 
 -- Tabla de eventos
-CREATE TABLE eventos (
+CREATE TABLE IF NOT EXISTS eventos (
     id SERIAL PRIMARY KEY,
     lugar_id INTEGER NOT NULL REFERENCES lugares(id),
     fecha_hora_inicio TIMESTAMP NOT NULL,
@@ -34,7 +34,7 @@ CREATE TABLE eventos (
 );
 
 -- Tabla de lineup (artistas por evento)
-CREATE TABLE lineup (
+CREATE TABLE IF NOT EXISTS lineup (
     id SERIAL PRIMARY KEY,
     evento_id INTEGER NOT NULL REFERENCES eventos(id),
     artista_id INTEGER NOT NULL REFERENCES artistas(id),
@@ -46,7 +46,7 @@ CREATE TABLE lineup (
 );
 
 -- Tabla de localidades (zonas con precios diferentes)
-CREATE TABLE localidades (
+CREATE TABLE IF NOT EXISTS localidades (
     id SERIAL PRIMARY KEY,
     localidad VARCHAR(255) NOT NULL UNIQUE,
     cantidad_asientos INTEGER NOT NULL CHECK (cantidad_asientos > 0),
@@ -55,14 +55,14 @@ CREATE TABLE localidades (
 );
 
 -- Tabla de asientos
-CREATE TABLE asientos (
+CREATE TABLE IF NOT EXISTS asientos (
     codigo VARCHAR(255) PRIMARY KEY,
     localidad_id INTEGER NOT NULL REFERENCES localidades(id),
     fila VARCHAR(10) NOT NULL
 );
 
 -- Tabla de tickets
-CREATE TABLE tickets (
+CREATE TABLE IF NOT EXISTS tickets (
     id SERIAL PRIMARY KEY,
     usuario_id INTEGER NOT NULL REFERENCES usuarios(id),
     evento_id INTEGER NOT NULL REFERENCES eventos(id),
@@ -74,7 +74,7 @@ CREATE TABLE tickets (
 );
 
 -- Tabla de transacciones
-CREATE TABLE transacciones (
+CREATE TABLE IF NOT EXISTS transacciones (
     id SERIAL PRIMARY KEY,
     usuario_id INTEGER NOT NULL REFERENCES usuarios(id),
     fecha TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -83,7 +83,7 @@ CREATE TABLE transacciones (
 );
 
 -- Tabla de detalles de transacciones (permite saber los tickets que se compraron en una transaccion)
-CREATE TABLE transacciones_detalles (
+CREATE TABLE IF NOT EXISTS transacciones_detalles (
     id SERIAL PRIMARY KEY,
     transaccion_id INTEGER NOT NULL REFERENCES transacciones(id),
     ticket_id INTEGER NOT NULL REFERENCES tickets(id),
@@ -92,7 +92,7 @@ CREATE TABLE transacciones_detalles (
 
 -- Tabla de pagos (métodos de pago utilizados por transacción)
 -- permite que que paguen los tickets de diferentes formas
-CREATE TABLE transacciones_pagos (
+CREATE TABLE IF NOT EXISTS transacciones_pagos (
     id SERIAL PRIMARY KEY,
     transaccion_id INTEGER NOT NULL REFERENCES transacciones(id),
     metodo_pago VARCHAR(20) NOT NULL CHECK (metodo_pago IN ('Tarjeta de crédito', 'Efectivo', 'Transferencia')),
