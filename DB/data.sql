@@ -46,15 +46,6 @@ INSERT INTO asientos (codigo, localidad_id, fila) VALUES
 
 -- Insert data de tickets
 INSERT INTO tickets (usuario_id, evento_id, asiento_id, beneficiario, estado) VALUES
-(1, 1, 'VIP1', 'Juan Pérez', 'Reservado'),
-(1, 1, 'VIP2', 'Luna Pérez', 'Pagado'),
-(2, 1, 'VIP3', 'María Gómez', 'Reservado'),
-(3, 1, 'GEN1', 'Carlos López', 'Pagado'),
-(4, 1, 'GEN2', 'Ana Martínez', 'Reservado'),
-(5, 1, 'GEN3', 'Luis Hernández', 'Reservado'), 
-(5, 1, 'GEN4', 'Pedro Ramírez', 'Pagado'),
-(5, 1, 'GEN5', 'Sofía López', 'Pagado'),
-(5, 1, 'GEN6', 'Andrés García', 'Pagado');
 
 -- Insert data de transacciones
 INSERT INTO transacciones (usuario_id, monto_total, estado) VALUES

@@ -1,0 +1,16 @@
+{
+  "name": "proyecto2_db",
+  "version": "1.0.0",
+  "description": "Simulación de reservas de entradas para conciertos con Node.js y PostgreSQL.",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "simulate": "node simulate_tickets.js"
+  },
+  "dependencies": {
+    "pg": "^8.14.1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

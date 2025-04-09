@@ -1,0 +1,13 @@
+FROM postgres:15
+
+# Set environment variables for PostgreSQL
+ENV POSTGRES_USER=postgres
+ENV POSTGRES_PASSWORD=passwordxd
+ENV POSTGRES_DB=tickets_db
+
+# Copy initialization scripts into the container
+COPY ./DB/ddl.sql /docker-entrypoint-initdb.d/01-ddl.sql
+COPY ./DB/data.sql /docker-entrypoint-initdb.d/02-data.sql
+
+# Expose the default PostgreSQL port
+EXPOSE 5432

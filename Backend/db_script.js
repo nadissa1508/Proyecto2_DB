@@ -5,9 +5,9 @@ const path = require('path');
 const cn = {
   user: 'postgres',
   host: 'localhost',
-  password: 'passwordxd', //aqui va su contraseña de postgres
-  port: 5432,
-  database: 'tickets_db' //nombre de la db
+  password: 'passwordxd', 
+  port: 5434,
+  database: 'tickets_db'
 };
 
 async function startDB() {
