@@ -7,51 +7,87 @@ const pool = new Pool({
     password: process.env.DB_PASSWORD || 'passwordxd',
     port: process.env.DB_PORT || 5434,
     database: process.env.DB_NAME || 'tickets_db',
-    max: 20,
-    idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 2000,
+    max: 5, // Reduced pool size
+    min: 0,
+    idleTimeoutMillis: 1000,
+    connectionTimeoutMillis: 1000,
+    maxUses: 100 // Limit connection reuse
 });
 
-async function reserveSeat(threadId, asientoId, isolationLevel) {
+async function reserveSeat() {
     const client = await pool.connect();
+    const startTime = Date.now();
+    const { threadId, seatCategory, isolationLevel } = workerData;
+    
     try {
-        await client.query(`BEGIN ISOLATION LEVEL ${isolationLevel}`);
+        await client.query('BEGIN');
+        await client.query(`SET TRANSACTION ISOLATION LEVEL ${isolationLevel}`);
 
-        // Check if the seat is already reserved
-        const checkQuery = `
-            SELECT COUNT(*) AS count
-            FROM tickets
-            WHERE asiento_id = $1
-        `;
-        const checkResult = await client.query(checkQuery, [asientoId]);
+        // Simplified query
+        const seatResult = await client.query(`
+            SELECT a.codigo, e.id as evento_id
+            FROM asientos a
+            JOIN localidades l ON a.localidad_id = l.id
+            JOIN eventos e ON l.evento_id = e.id
+            WHERE l.localidad = $1
+            AND NOT EXISTS (
+                SELECT 1 FROM tickets t 
+                WHERE t.asiento_id = a.codigo
+            )
+            LIMIT 1
+            FOR UPDATE SKIP LOCKED
+        `, [seatCategory]);
 
-        if (parseInt(checkResult.rows[0].count, 10) === 0) {
-            // Reserve the seat if it's not already reserved
-            const userId = Math.floor(Math.random() * 5) + 1; // Random user ID between 1 and 5
-            const eventoId = 1; // Assuming event ID is 1
-            const beneficiario = `User${threadId}`;
-            const estado = 'Reservado';
-
-            const insertQuery = `
-                INSERT INTO tickets (usuario_id, evento_id, asiento_id, beneficiario, estado)
-                VALUES ($1, $2, $3, $4, $5)
-            `;
-            await client.query(insertQuery, [userId, eventoId, asientoId, beneficiario, estado]);
-            await client.query('COMMIT');
-            parentPort.postMessage(`Thread ${threadId}: Successfully reserved seat ${asientoId}`);
-            return true;
-        } else {
-            await client.query('ROLLBACK');
-            parentPort.postMessage(`Thread ${threadId}: Failed to reserve seat ${asientoId} (already reserved)`);
-            return false;
+        if (seatResult.rows.length === 0) {
+            throw new Error('No seats available');
         }
+
+        const seat = seatResult.rows[0];
+
+        await client.query(`
+            INSERT INTO tickets (usuario_id, evento_id, asiento_id, beneficiario, estado)
+            VALUES ($1, $2, $3, $4, $5)
+        `, [1, seat.evento_id, seat.codigo, `User ${threadId}`, 'Reservado']);
+
+        await client.query('COMMIT');
+        
+        const endTime = Date.now();
+        parentPort.postMessage({
+            success: true,
+            message: `Thread ${threadId}: Reserved seat ${seat.codigo}`,
+            executionTime: endTime - startTime
+        });
     } catch (error) {
         await client.query('ROLLBACK');
-        parentPort.postMessage(`Thread ${threadId}: Error - ${error.message}`);
-        return false;
+        const endTime = Date.now();
+        parentPort.postMessage({
+            success: false,
+            message: `Thread ${threadId}: ${error.message}`,
+            executionTime: endTime - startTime
+        });
     } finally {
         client.release();
+        if (process.memoryUsage().heapUsed > 500 * 1024 * 1024) { // 500MB limit
+            global.gc && global.gc(); // Force garbage collection if available
+        }
     }
 }
 
-reserveSeat(workerData.threadId, workerData.asientoId, workerData.isolationLevel);
+// Cleanup function
+async function cleanup() {
+    await pool.end();
+    process.exit(0);
+}
+
+process.on('exit', cleanup);
+process.on('SIGINT', cleanup);
+process.on('SIGTERM', cleanup);
+
+reserveSeat().catch(error => {
+    parentPort.postMessage({
+        success: false,
+        message: `Thread ${workerData.threadId}: Error - ${error.message}`,
+        executionTime: 0
+    });
+    cleanup();
+});

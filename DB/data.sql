@@ -1,75 +1,63 @@
--- Insert data de usuarios
+-- Clear ALL existing data first
+TRUNCATE TABLE transacciones_pagos, transacciones_detalles, tickets, asientos, localidades, 
+             lineup, eventos, artistas, lugares, usuarios CASCADE;
+
+-- Reset sequence
+ALTER SEQUENCE usuarios_id_seq RESTART WITH 1;
+ALTER SEQUENCE lugares_id_seq RESTART WITH 1;
+ALTER SEQUENCE eventos_id_seq RESTART WITH 1;
+ALTER SEQUENCE localidades_id_seq RESTART WITH 1;
+
+-- Insert test usuarios
 INSERT INTO usuarios (nombre, apellido, email, estado) VALUES
-('Juan', 'Pérez', 'juan.perez@example.com', TRUE),
-('María', 'Gómez', 'maria.gomez@example.com', TRUE),
-('Carlos', 'López', 'carlos.lopez@example.com', TRUE),
-('Ana', 'Martínez', 'ana.martinez@example.com', TRUE),
-('Luis', 'Hernández', 'luis.hernandez@example.com', TRUE);
+('Test', 'User1', 'test1@test.com', TRUE),
+('Test', 'User2', 'test2@test.com', TRUE),
+('Test', 'User3', 'test3@test.com', TRUE),
+('Test', 'User4', 'test4@test.com', TRUE),
+('Test', 'User5', 'test5@test.com', TRUE);
 
--- Insert data de lugares
+-- Insert test lugar
 INSERT INTO lugares (nombre, cantidad_asientos, direccion, estado) VALUES
-('Explanada cayala', 5000, 'Bulevar Austriaco, Zona 16, Guatemala', 'Disponible');
+('Test Venue', 1000, 'Test Address 123', 'Disponible');
 
--- Insert data de artistas
-INSERT INTO artistas (nombre, genero) VALUES
-('Coldplay', 'Rock'),
-('Shakira', 'Pop'),
-('Bad Bunny', 'Reggaeton');
-
--- Insert data de eventos
+-- Insert test evento
 INSERT INTO eventos (lugar_id, fecha_hora_inicio, estado) VALUES
-(1, '2025-05-15 20:00:00', 'Vigente');
+(1, '2024-12-31 20:00:00', 'Vigente');
 
--- Insert data de lineup
-INSERT INTO lineup (evento_id, artista_id, fecha, hora_inicio, hora_final) VALUES
-(1, 1, '2025-05-15', '2025-05-15 20:00:00', '2025-05-15 21:30:00'), -- Coldplay
-(1, 2, '2025-05-15', '2025-05-15 21:45:00', '2025-05-15 23:00:00'), -- Shakira
-(1, 3, '2025-05-15', '2025-05-15 23:15:00', '2025-05-16 00:30:00'); -- Bad Bunny
-
--- Insert data de localidades
+-- Insert test localidades with correct counts
 INSERT INTO localidades (localidad, cantidad_asientos, evento_id, precio) VALUES
-('VIP', 500, 1, 3000.00),
-('General', 4500, 1, 1500.00);
+('VIP', 200, 1, 1000.00),    
+('General', 300, 1, 500.00);  
 
--- Insert data de asientos
-INSERT INTO asientos (codigo, localidad_id, fila) VALUES
-('VIP1', 1, 'A'),
-('VIP2', 1, 'A'),
-('VIP3', 1, 'A'),
-('GEN1', 2, 'G'),
-('GEN2', 2, 'G'),
-('GEN3', 2, 'G'),
-('GEN4', 2, 'G'),
-('GEN5', 2, 'G'),
-('GEN6', 2, 'G');
+-- Clear existing asientos
+DELETE FROM asientos;
 
+-- VIP seats (200 seats)
+INSERT INTO asientos (codigo, localidad_id, fila)
+SELECT 
+    'VIP' || LPAD(n::text, 3, '0'),
+    1,
+    CHR(65 + ((n-1)/40)::integer) -- Generates rows A-E
+FROM generate_series(1, 200) n;
 
--- Insert data de tickets
-INSERT INTO tickets (usuario_id, evento_id, asiento_id, beneficiario, estado) VALUES
+-- General seats (300 seats)
+INSERT INTO asientos (codigo, localidad_id, fila)
+SELECT 
+    'GEN' || LPAD(n::text, 3, '0'),
+    2,
+    CHR(65 + ((n-1)/60)::integer) -- Generates rows A-E
+FROM generate_series(1, 300) n;
 
--- Insert data de transacciones
-INSERT INTO transacciones (usuario_id, monto_total, estado) VALUES
-(1, 6000.00, 'Pendiente'),
-(2, 3000.00, 'Completado'),
-(3, 1500.00, 'Pendiente'),
-(4, 1500.00, 'Completado'),
-(5, 1500.00, 'Pendiente'),
-(5, 4500.00, 'Completado');
-
--- Insert data de transacciones_detalles
-INSERT INTO transacciones_detalles (transaccion_id, ticket_id) VALUES
-(1, 1),
-(1, 2),
-(2, 3),
-(3, 4),
-(4, 5),
-(5, 6),
-(6, 7),
-(6, 8),
-(6, 9); 
-
--- Insert data de transacciones_pagos
-INSERT INTO transacciones_pagos (transaccion_id, metodo_pago, monto_pagado) VALUES
-(2, 'Tarjeta de crédito', 3000.00),
-(4, 'Efectivo', 1500.00),
-(6, 'Transferencia', 4500.00);
+-- Verify seat counts
+DO $$
+DECLARE
+    vip_count INTEGER;
+    gen_count INTEGER;
+BEGIN
+    SELECT COUNT(*) INTO vip_count FROM asientos WHERE codigo LIKE 'VIP%';
+    SELECT COUNT(*) INTO gen_count FROM asientos WHERE codigo LIKE 'GEN%';
+    
+    RAISE NOTICE 'VIP seats count: %', vip_count;
+    RAISE NOTICE 'General seats count: %', gen_count;
+    RAISE NOTICE 'Reserved tickets count: %', (SELECT COUNT(*) FROM tickets);
+END $$;
