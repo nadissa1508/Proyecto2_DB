@@ -3,9 +3,18 @@ Proyecto del curso Bases de Datos I. Sistema que permite simular reservas de ent
 
 # Cómo ejecutar la simulación
 
-npm init -y
-npm install pg
-node app.js
+1)
+Levantar el docker
 
+RUN
+docker-compose up --build
 
-(ver si utilizamos docker)
+2)
+Una vez este arriba el docker
+
+RUN
+node simulate_tickets.js
+
+## Recomendaciones 
+
+Con docker desktop mantener activa la imagen para poder usar la misma terminal de vscode
